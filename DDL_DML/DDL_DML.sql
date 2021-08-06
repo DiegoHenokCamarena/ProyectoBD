@@ -54,7 +54,7 @@ CREATE TABLE PROPIETARIO(
     claveProp NUMBER(4) PRIMARY KEY,
     nomProp VARCHAR2(15) NOT NULL,
     apPatProp VARCHAR2(15) NOT NULL,
-    apMatProp VARCHAR2(15) NULL,
+    apMatProp VARCHAR2(15),
     colProp VARCHAR2(20) NOT NULL,
     numCalleProp NUMBER(5) NOT NULL,
     calleProp VARCHAR2(15) NOT NULL,
@@ -79,9 +79,6 @@ CREATE TABLE MASCOTA(
     CONSTRAINT fkMasc FOREIGN KEY (claveProp) REFERENCES propietario ON DELETE CASCADE,
     CONSTRAINT pkMasc PRIMARY KEY (claveMascota)
 );
-
-
-
 
 CREATE TABLE SERVICIO(
     claveServ NUMBER(4) PRIMARY KEY,
@@ -149,7 +146,6 @@ CREATE TABLE INTERNAMIENTO(
     CONSTRAINT FK_INTER3 FOREIGN KEY (claveInter) REFERENCES DATOS_INTERNAMIENTO
 );
 
-
 CREATE TABLE MEDICO(
     claveEmp NUMBER(4),
     claveMedico NUMBER(4),
@@ -204,7 +200,6 @@ CREATE TABLE PAGO
     CONSTRAINT ckConcepPago CHECK( conceptoPago IN (‘Pago Unico’ , ‘Abono’) )
 );
 
-
 CREATE TABLE MEDICAMENTO(
     clvMedicamento NUMBER(2),
     nomMedicamento VARCHAR(30) NOT NULL,
@@ -218,7 +213,6 @@ CREATE TABLE CONS_MEDI(
     CONSTRAINT fkCons_ClvCons FOREIGN KEY(clvCons) REFERENCES CONSULTA,
     CONSTRAINT pkConsulta_Medi PRIMARY KEY(clvMedicamento, clvCons)
 );
-
 
 CREATE TABLE INTER_MEDI(
     clvMedicamento NUMBER(2),
