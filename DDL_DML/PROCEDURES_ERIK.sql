@@ -18,12 +18,23 @@ END sp_dropAllTables;
 
 exec sp_dropAllTables;
 
-
 /* ======================================================== */
 /* INSERCIÓN DE DATOS */
 /* ======================================================== */
 DROP SEQUENCE SQ_CLAVEPROPIETARIO;
 CREATE SEQUENCE SQ_CLAVEPROPIETARIO
+MINVALUE 1
+START WITH 1
+INCREMENT BY 1;
+
+DROP SEQUENCE SQ_CLAVE_MASCOTA;
+CREATE SEQUENCE SQ_CLAVE_MASCOTA
+MINVALUE 1
+START WITH 1
+INCREMENT BY 1;
+
+DROP SEQUENCE SQ_CLAVE_SERVICIO;
+CREATE SEQUENCE SQ_CLAVE_SERVICIO
 MINVALUE 1
 START WITH 1
 INCREMENT BY 1;
@@ -66,12 +77,6 @@ END SP_addPropietario;
 
 exec SP_addPropietario('Erik', 'Zárate', 'Bravo', 'Colonia 1', '1', 'Calle 1', 'deleg 1', 5524718650);
 
-DROP SEQUENCE SQ_CLAVE_MASCOTA;
-CREATE SEQUENCE SQ_CLAVE_MASCOTA
-MINVALUE 1
-START WITH 1
-INCREMENT BY 1;
-
 /* -- AÑADIR UNA MASCOTA Y RELACIONARLA CON EL PROPIETARIO DADA SU CLVPROP -- */
 CREATE OR REPLACE PROCEDURE SP_ADDMASCOTA (
     p_claveProp mascota.claveProp%TYPE,
@@ -104,19 +109,12 @@ BEGIN
     DBMS_OUTPUT.PUT_LINE('Se agrego la mascota con clave: '||SQ_CLAVE_MASCOTA.CURRVAL);
 END SP_ADDMASCOTA;
 /
-show errors;
 
 exec SP_ADDMASCOTA(1, 'Mesler', 'Cafe', 'Perro', 'Mastin Ingles', 5);
 
-
-DROP SEQUENCE SQ_CLAVE_SERVICIO;
-CREATE SEQUENCE SQ_CLAVE_SERVICIO
-MINVALUE 1
-START WITH 1
-INCREMENT BY 1;
-
 /* -- AÑADIR UN SERVICIO-- */
-CREATE OR REPLACE PROCEDURE SP_ADDSERVICIO(
+/* Cada servicio tiene clave unica */
+CREATE OR REPLACE PROCEDURE SP_ADD_SERVICIO(
     P_TIPOSERV servicio.tipoServ%TYPE,
     P_DESCRIPCIONSERV servicio.descripcionServ%TYPE,
     P_COSTOSERV servicio.costoServ%TYPE
@@ -131,14 +129,13 @@ BEGIN
     );
 
     DBMS_OUTPUT.PUT_LINE('Se creo el servicio con clave: '||SQ_CLAVE_SERVICIO.CURRVAL);
-END SP_ADDSERVICIO;
+END SP_ADD_SERVICIO;
 /
-show errors;
 
-exec SP_ADDSERVICIO( 1, 'CONSULTA', 500 );
+exec SP_ADD_SERVICIO( 1, 'CONSULTA', 500 );
 
 /* -- REGISTRA UN SERVICIO BRINDADO A UNA MASCOTA -- */
-CREATE OR REPLACE PROCEDURE SP_MASCOTA_SERVICIO (
+CREATE OR REPLACE PROCEDURE SP_ADD_MASCOTA_SERVICIO (
     p_claveServ SERVICIO.claveServ%TYPE,
     p_claveMascota MASCOTA.claveMascota%TYPE
 )
@@ -151,55 +148,69 @@ BEGIN
     );
 
     DBMS_OUTPUT.PUT_LINE('La mascota con clave '||p_claveMascota ||' contrato el servicio con clave '||p_claveServ);
-END SP_MASCOTA_SERVICIO;
+END SP_ADD_MASCOTA_SERVICIO;
 /
 
-exec SP_MASCOTA_SERVICIO(1, 1);
+exec SP_ADD_MASCOTA_SERVICIO(1, 1);
 
 /* =========================================== */
 /* Borrado de datos */
 /* =========================================== */
-CREATE OR REPLACE PROCEDURE SP_dropPropietario(
+CREATE OR REPLACE PROCEDURE SP_drop_Propietario(
     p_claveProp propietario.claveProp%TYPE
 )
 IS
 BEGIN
-
     -- borramos el registro del propietario y de forma automatica el registro de
     -- telefonoprop
     DELETE FROM PROPIETARIO
     WHERE CLAVEPROP = P_CLAVEPROP;
 
     DBMS_OUTPUT.PUT_LINE('Se borro al propietario con clave: '||p_claveProp);
-END SP_dropPropietario;
+END SP_drop_Propietario;
 /
 
-CREATE OR REPLACE PROCEDURE SP_DROPMASCOTA (
+-- Elimina una mascota dada su clave
+CREATE OR REPLACE PROCEDURE SP_DROP_MASCOTA (
     P_CLAVEMASCOTA mascota.claveMascota%TYPE
 )
 IS
 BEGIN
-
     -- Cuando se borra la mascota se borran los servicios que esta recibio
     DELETE FROM MASCOTA
     WHERE CLAVEMASCOTA = P_CLAVEMASCOTA;
     DBMS_OUTPUT.PUT_LINE('Se borro la mascota con clave: '||p_claveMascota);
-END SP_DROPMASCOTA;
+END SP_DROP_MASCOTA;
 /
 
+-- Elimina un servicio dada su clave
 CREATE OR REPLACE PROCEDURE SP_DROP_SERVICIO(
     p_claveServ servicio.claveServ%TYPE
 )
 IS
+    v_claveServ servicio.claveServ%TYPE;
 BEGIN
+    select claveServ 
+    into v_claveServ
+    from servicio
+    where claveServ = p_claveServ;
+
     DELETE FROM SERVICIO
     WHERE CLAVESERV = P_CLAVESERV;
 
+    -- borra de forma automatica a la relación entre propietario y mascota
     DBMS_OUTPUT.PUT_LINE('Se borro el servicio con clave: '||p_claveServ);
+
+    EXCEPTION
+        when NO_DATA_FOUND then
+            DBMS_OUTPUT.PUT_LINE('ERROR: No existe el servicio.');
 
 END SP_DROP_SERVICIO;
 /
 
+exec SP_DROP_SERVICIO(3);
+
+-- Elimina la relación entre una mascota y un servicio dadas sus claves
 CREATE OR REPLACE PROCEDURE SP_DROP_MASCOTA_SERVICIO(
     P_CLAVESERV MASCOTA_SERVICIO.CLAVESERV%TYPE,
     P_CLAVEMASCOTA MASCOTA_SERVICIO.CLAVEMASCOTA%TYPE
@@ -220,37 +231,101 @@ END SP_DROP_MASCOTA_SERVICIO;
 /* =========================================== */
 /* Actualización de datos */
 /* =========================================== */
-CREATE OR REPLACE PROCEDURE SP_UPDATE_PROPIETARIO(
+-- Procedimiento para cambiar el nombre del propietario
+CREATE OR REPLACE PROCEDURE SP_UPD_PROP_NOMBRE(
     p_claveProp propietario.claveProp%TYPE,
     p_nomProp propietario.nomProp%TYPE,
     p_apPatProp propietario.apPatProp%TYPE,
-    p_apMatProp propietario.apMatProp%TYPE,
-    p_colProp propietario.colProp%TYPE,
-    p_numCalleProp propietario.numCalleProp%TYPE,
-    p_calleProp propietario.calleProp%TYPE,
-    p_delegProp propietario.delegProp%TYPE,
-    p_telefono telefonoprop.telefono%TYPE
+    p_apMatProp propietario.apMatProp%TYPE
 )
 IS
+    v_claveProp propietario.claveProp%TYPE;
 BEGIN
+    -- Revisamos que exista el propietario
+    select claveProp into v_claveProp
+    from propietario where claveProp = p_claveProp;
+
     update PROPIETARIO
     set nomProp = p_nomProp,
         apPatProp = p_apPatProp,
-        apMatProp = p_apMatProp,
+        apMatProp = p_apMatProp
+    where claveProp = p_claveProp;
+
+    DBMS_OUTPUT.PUT_LINE('Se cambio el nombre del propietario con clave: '||p_claveProp);
+
+    -- manejo de exepciones
+    EXCEPTION
+        when NO_DATA_FOUND THEN
+            DBMS_OUTPUT.PUT_LINE('ERROR: No existe el Propietario con clave: '||p_claveProp);
+
+END SP_UPD_PROP_NOMBRE;
+/
+
+exec SP_UPD_PROP_NOMBRE(1, 'Manuel', 'Alejandor', 'Bravo');
+exec SP_UPD_PROP_NOMBRE(2, 'Manuel', 'Alejandor', 'Bravo');
+
+-- Procedimiento para cambiar la dirección del propietario
+CREATE OR REPLACE PROCEDURE SP_UPD_PROP_DIR(
+    p_claveProp propietario.claveProp%TYPE,
+    p_colProp propietario.colProp%TYPE,
+    p_numCalleProp propietario.numCalleProp%TYPE,
+    p_calleProp propietario.calleProp%TYPE,
+    p_delegProp propietario.delegProp%TYPE
+)
+IS
+    v_claveProp propietario.claveProp%TYPE;
+BEGIN
+    -- Revisamos que exista el propietario
+    select claveProp into v_claveProp
+    from propietario where claveProp = p_claveProp;
+
+    update PROPIETARIO
+    set 
         colProp = p_colProp,
         numCalleProp = p_numCalleProp,
         calleProp = p_calleProp,
         delegProp = p_delegProp
     where claveProp = p_claveProp;
 
-    update telefonoprop
-    set telefono = p_telefono
-    where claveProp = p_claveProp;
+    DBMS_OUTPUT.PUT_LINE('Se cambio la dirección del propietario con clave: '||p_claveProp);
 
-    DBMS_OUTPUT.PUT_LINE('Se modifico el propietario con clave '||P_CLAVEPROP);
-END SP_UPDATE_PROPIETARIO;
+    -- manejo de exepciones
+    EXCEPTION
+        when NO_DATA_FOUND THEN
+            DBMS_OUTPUT.PUT_LINE('ERROR: No existe el Propietario con clave: '||p_claveProp);
+
+END SP_UPD_PROP_DIR;
 /
 
+exec SP_UPD_PROP_DIR(2, 'Colonia 12', 12, 'Calle 12', 'Deleg 12');
+
+CREATE OR REPLACE PROCEDURE SP_UPD_PROP_TEL(
+    p_claveProp TELEFONOPROP.claveProp%TYPE,
+    p_telefono TELEFONOPROP.telefono%TYPE
+)
+IS
+    v_claveProp propietario.claveProp%TYPE;
+BEGIN
+    -- Revisamos que exista el propietario
+    SELECT CLAVEPROP INTO V_CLAVEPROP
+    FROM PROPIETARIO WHERE CLAVEPROP = P_CLAVEPROP;
+
+    update TELEFONOPROP
+    set 
+        telefono = p_telefono
+    where claveProp = p_claveProp;
+
+    DBMS_OUTPUT.PUT_LINE('Se cambio el telefono del propietario con clave: '||p_claveProp);
+
+    -- manejo de exepciones
+    EXCEPTION
+        when NO_DATA_FOUND THEN
+            DBMS_OUTPUT.PUT_LINE('ERROR: No existe el Propietario con clave: '||p_claveProp);
+
+END SP_UPD_PROP_TEL;
+/
+
+-- Actualiza el tipo de servicio, por consecuente se modifica la descripcionServ y el costo.
 CREATE OR REPLACE PROCEDURE SP_UPDATE_SERVICIO(
 	P_CLAVESERV SERVICIO.CLAVESERV%TYPE,
 	P_TIPOSERV SERVICIO.TIPOSERV%TYPE,
@@ -258,7 +333,12 @@ CREATE OR REPLACE PROCEDURE SP_UPDATE_SERVICIO(
 	P_COSTOSERV SERVICIO.COSTOSERV%TYPE
 )
 IS
+    v_claveServ servicio.claveServ%TYPE;
 BEGIN
+    select claveServ into v_claveServ
+    from servicio where claveServ = p_claveServ;
+
+
 	UPDATE SERVICIO
 	SET 
 		TIPOSERV = P_TIPOSERV,
@@ -268,8 +348,11 @@ BEGIN
 
 	DBMS_OUTPUT.PUT_LINE('Se modifico el servicio con clave '||p_claveServ);
 
+    EXCEPTION
+        when NO_DATA_FOUND THEN
+            DBMS_OUTPUT.PUT_LINE('ERROR: No existe el Servicio con clave: '||p_claveServ);
+
 END SP_UPDATE_SERVICIO;
 /
 
 /* TODO: MASCOTA-SERVICIO se puede modificar???  */
-
