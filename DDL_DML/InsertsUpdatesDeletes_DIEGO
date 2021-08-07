@@ -1,0 +1,225 @@
+---------------------------
+---------EMPLEADO----------
+---------------------------
+
+CREATE OR REPLACE PROCEDURE spInsertEmpleado
+(
+	vNomEmp IN VARCHAR2 ,
+	vApPatEmp IN VARCHAR2 ,
+	vApMatEmp IN VARCHAR2 ,
+	horaIni IN VARCHAR2 ,
+	horaFin IN VARCHAR2
+)
+AS 
+BEGIN
+	INSERT INTO empleado VALUES(SQ_CLAVEEMP.NEXTVAL,vNomEmp,vApPatEmp,vApMatEmp,horaIni,horaFin,SYSDATE);
+END spInsertEmpleado;
+/
+
+CREATE OR REPLACE PROCEDURE spDeleteEmpleado
+(
+	vClaveEmp IN NUMBER
+)
+AS 
+BEGIN
+	DELETE FROM empleado WHERE claveEmp=vClaveEmp;
+END spDeleteEmpleado;
+/
+
+CREATE OR REPLACE PROCEDURE spUpHoraIniEmp
+(
+		vClaveEmp IN NUMBER,
+		vHoraEntrada IN VARCHAR2
+)
+AS
+BEGIN
+	UPDATE empleado SET horarioInicioServ=vHoraEntrada WHERE claveEmp=vClaveEmp;
+END spUpHoraIniEmp;
+/ 
+
+CREATE OR REPLACE PROCEDURE spUpdateHoraFinEmp
+(
+		vClaveEmp IN NUMBER,
+		vHoraFin IN VARCHAR2
+)
+AS
+BEGIN
+	UPDATE empleado SET horarioFinServ=vHoraFin WHERE claveEmp=vClaveEmp;
+END spUpdateHoraFinEmp;
+/ 
+
+CREATE OR REPLACE PROCEDURE spUpdateNombreEmp
+(
+		vClaveEmp IN NUMBER,
+		vNombre IN VARCHAR2,
+		vAP IN VARCHAR2,
+		vAM IN VARCHAR2
+)
+AS
+BEGIN
+	UPDATE empleado SET nomEmp=vNombre, apPatEmp=vAP, apMatEmp=vAM WHERE claveEmp=vClaveEmp;
+END spUpdateNombreEmp;
+/  
+
+---------------------------
+---------MEDICO------------
+--------------------------- 
+
+CREATE OR REPLACE PROCEDURE spInsertMedico
+(
+	vNomEmp IN VARCHAR2 ,
+	vApPatEmp IN VARCHAR2,
+	vApMatEmp IN VARCHAR2,
+	vCedProf IN NUMBER,
+	vEspMed IN VARCHAR2,
+	vHoraIni IN VARCHAR2,
+	vHoraFin IN VARCHAR2
+)
+AS 
+BEGIN
+	spInsertEmpleado(vNomEmp,vApPatEmp,vApMatEmp,vhoraIni,vhoraFin);
+	INSERT INTO medico VALUES(SQ_CLAVEEMP.CURRVAL,SQ_CLAVEMED.NEXTVAL,vCedProf,vEspMed);
+END spInsertMedico;
+/
+
+CREATE OR REPLACE PROCEDURE spDeleteMedico
+(
+	vClaveEmp IN NUMBER
+)
+AS
+BEGIN
+	DELETE FROM medico WHERE claveEmp=vClaveEmp;
+	spDropEmpleado(vClaveEmp);
+END spDeleteMedico;
+/
+
+CREATE OR REPLACE PROCEDURE spUpdateCedProfMed
+(
+		vClaveMed IN NUMBER,
+		vCP IN NUMBER
+)
+AS
+BEGIN
+	UPDATE medico SET cedulaProfMed=vCP WHERE claveMedico=vClaveMed;
+END spUpdateCedProfMed;
+/ 
+
+CREATE OR REPLACE PROCEDURE spUpdateEspecMed
+(
+		vClaveMed IN NUMBER,
+		vEspMed IN NUMBER
+)
+AS
+BEGIN
+	UPDATE medico SET especialidadMed=vEspMed WHERE claveMedico=vClaveMed;
+END spUpdateEspecMed;
+/ 
+
+EXEC spInsertMedico('Sara','Fuentes','Rosas',12345678,'Mamiferos','00:00','08:00');
+EXEC spInsertMedico('Miguel','Ruiz','Enriquez',87654321,'Mamiferos','08:00','16:00');
+EXEC spInsertMedico('Rodrigo','Lopez','Rodriguez',19283746,'Mamiferos','16:00','00:00');
+
+EXEC spInsertMedico('Frida','Olmos','García',67584930,'Reptiles','00:00','08:00');
+EXEC spInsertMedico('Clara','Krauze','Toledo',10263876,'Reptiles','08:00','16:00');
+EXEC spInsertMedico('Emilio','García','Yañez',76124986,'Reptiles','16:00','00:00');
+
+EXEC spInsertMedico('Nora','Quiroz','Fiel',11223344,'Aves','00:00','08:00');
+EXEC spInsertMedico('Ivan','Lirios','Castañeda',44332211,'Aves','08:00','16:00');
+EXEC spInsertMedico('Cristian','Jaimez','Hernandez',99887766,'Aves','16:00','00:00');
+
+---------------------------
+---------CUIDADOR----------
+--------------------------- 
+
+CREATE OR REPLACE PROCEDURE spInsertCuidador
+(
+    vNomEmp IN VARCHAR2 ,
+    vApPatEmp IN VARCHAR2,
+	vApMatEmp IN VARCHAR2,
+    vAreaClinica VARCHAR2,
+    vDelCuid IN VARCHAR2,
+    vColCuid IN VARCHAR2,
+    vCalleCuid IN VARCHAR2,
+    vHoraIni IN VARCHAR2,
+	vHoraFin IN VARCHAR2
+)
+AS 
+BEGIN
+	spInsertEmpleado(vNomEmp,vApPatEmp,vApMatEmp,vhoraIni,vhoraFin);
+	INSERT INTO cuidador VALUES(SQ_CLAVEEMP.CURRVAL,SQ_CLAVECUI.NEXTVAL,vAreaClinica,vDelCuid,vColCuid,vCalleCuid);
+END spInsertCuidador;
+/
+
+CREATE OR REPLACE PROCEDURE spDeleteCuidador
+(
+	vClaveEmp IN NUMBER
+)
+AS
+BEGIN
+	DELETE FROM cuidador WHERE claveEmp=vClaveEmp;
+	spDropEmpleado(vClaveEmp);
+END spDeleteCuidador;
+/
+
+CREATE OR REPLACE PROCEDURE spUpdateAreaCuid
+(
+		vClaveCui IN NUMBER,
+		vArea IN VARCHAR2
+)
+AS
+BEGIN
+	UPDATE cuidador SET areaClinica=vArea WHERE claveCui=vClaveCui;
+END spUpdateAreaCuid;
+/ 
+
+CREATE OR REPLACE PROCEDURE spUpdateDirCuid
+(
+		vClaveCui IN NUMBER,
+		vDel IN VARCHAR2,
+		vCol IN VARCHAR2,
+		vCalle IN VARCHAR2
+)
+AS
+BEGIN
+	UPDATE cuidador SET delCuid=vDel, colCuid=vCol, calleCuid=vCalle WHERE claveCui=vClaveCui;
+END spUpdateDirCuid;
+/ 
+
+CREATE OR REPLACE PROCEDURE spAddTelCuid
+(
+		vClaveEmp IN NUMBER,
+		vTel IN NUMBER
+)
+AS
+BEGIN
+	INSERT INTO TELEFONO_CUIDADOR VALUES(vClaveEmp,vTel);
+END spAddTelCuid;
+/ 
+
+CREATE OR REPLACE PROCEDURE spDeleteTelCuid
+(
+		vClaveEmp IN NUMBER,
+		vTel IN NUMBER
+)
+AS
+BEGIN
+	DELETE FROM TELEFONO_CUIDADOR WHERE (claveEmp=vClaveEmp AND telefonoCui=vTel);
+END spDeleteTelCuid;
+/ 
+
+CREATE OR REPLACE PROCEDURE spUpdateTelCuid
+(
+		vClaveEmp IN NUMBER,
+		vTelViejo IN NUMBER,
+		vTelNuevo IN NUMBER
+)
+AS
+BEGIN
+	UPDATE TELEFONO_CUIDADOR SET telefonoCui=vTelNuevo WHERE telefonoCui=vTelViejo;
+END spUpdateTelCuid;
+/ 
+
+EXEC spInsertCuidador('Jorge','Alvarez','Trinidad','Intensivos','Gustavo A. Madero','Residencial Olmos','Trigo','00:00','08:00');
+EXEC spInsertCuidador('Jaime','Alvarado','Rosas','Revision','Alvaro Obregon','Olmos','Avena','08:00','16:00');
+EXEC spInsertCuidador('Aranza','Jimenez','Perez','Recuperacion','Coyoacan','Robles','Aguja','16:00','24:00');
+EXEC spInsertCuidador('Minerva','Franco','Paredes','Convalecencia','Iztacalco','Lindavista','Montevideo','08:00','16:00');
